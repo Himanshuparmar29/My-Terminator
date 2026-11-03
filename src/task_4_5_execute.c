@@ -13,8 +13,8 @@ int execute_pipeline_full(Pipeline *pl, const char *cwd, int last_status, int in
     int pipe_fds[MAX_PIPE_CMDS - 1][2];
 
     for (int i = 0; i < n - 1; i++) {
-        if (pipe(pipe_fds[i]) < 0) {
-            perror("pipe");
+        if (pipe2(pipe_fds[i], O_CLOEXEC) < 0) {
+            perror("pipe2");
             return 1;
         }
     }
@@ -77,6 +77,12 @@ int execute_pipeline_full(Pipeline *pl, const char *cwd, int last_status, int in
             for (int j = 0; j < n - 1; j++) {
                 close(pipe_fds[j][0]);
                 close(pipe_fds[j][1]);
+            }
+
+            int max_fd = sysconf(_SC_OPEN_MAX);
+            if (max_fd < 0 || max_fd > 1024) max_fd = 1024;
+            for (int fd = 3; fd < max_fd; fd++) {
+                close(fd);
             }
 
             if (cmd->argc == 0) {
@@ -203,7 +209,7 @@ int execute_capture(const char *cmd_line, const char *cwd, int last_status, char
     out_buf[0] = '\0';
 
     int pipe_fd[2];
-    if (pipe(pipe_fd) < 0) {
+    if (pipe2(pipe_fd, O_CLOEXEC) < 0) {
         return 1;
     }
 

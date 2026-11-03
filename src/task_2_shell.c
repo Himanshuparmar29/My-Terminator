@@ -107,6 +107,7 @@ void shell_run(int in_fd, int out_fd, const char *initial_cwd) {
         jobs_update_status();
         print_shell_prompt(out_fd, cwd);
     }
+    jobs_cleanup();
 }
 
 void *shell_thread_entry(void *arg) {

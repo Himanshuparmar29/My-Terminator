@@ -470,7 +470,7 @@ static void handle_enter(GuiApp *app, Tab *tab)
         else
             tab_append_line(tab, "No match for search term in history");
         char pb[512], pr[512];
-        snprintf(pr, sizeof(pr), "my@terminator:%s> ", get_disp_cwd(tab->cwd, pb, sizeof(pb)));
+        snprintf(pr, sizeof(pr), "user@terminator:%s> ", get_disp_cwd(tab->cwd, pb, sizeof(pb)));
         tab_append_line(tab, pr);
         tab_clear_input(tab);
         gui_redraw(app);
@@ -795,8 +795,10 @@ void gui_run(GuiApp *app)
                     tab_append_output(tab, buf, n);
                     redraw = 1;
                 }
-                else if (n == 0)
+                else if (n <= 0)
                 {
+                    if (n < 0 && (errno == EAGAIN || errno == EINTR))
+                        continue;
                     gui_close_tab(app, tmap[k]);
                     redraw = 1;
                     break;

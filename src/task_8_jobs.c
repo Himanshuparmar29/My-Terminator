@@ -192,3 +192,15 @@ int jobs_fg(int id, int in_fd, int out_fd) {
         }
     }
 }
+
+void jobs_cleanup(void) {
+    for (int i = 0; i < MAX_JOBS; i++) {
+        if (g_jobs[i].state == JOB_RUNNING || g_jobs[i].state == JOB_STOPPED) {
+            kill(-g_jobs[i].pgid, SIGHUP);
+            kill(-g_jobs[i].pgid, SIGCONT);
+            kill(g_jobs[i].pgid, SIGHUP);
+            kill(g_jobs[i].pgid, SIGCONT);
+            g_jobs[i].state = JOB_EMPTY;
+        }
+    }
+}

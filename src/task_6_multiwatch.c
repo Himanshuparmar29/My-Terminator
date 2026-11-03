@@ -82,7 +82,7 @@ static int parse_watch_list(const char *cmd_line, WatchEntry entries[], int max_
 
 static void launch_watch_cmd(WatchEntry *entry, const char *cwd) {
     int pipe_fd[2];
-    if (pipe(pipe_fd) < 0) {
+    if (pipe2(pipe_fd, O_CLOEXEC) < 0) {
         return;
     }
 
@@ -99,6 +99,12 @@ static void launch_watch_cmd(WatchEntry *entry, const char *cwd) {
         dup2(pipe_fd[1], STDERR_FILENO);
         close(pipe_fd[0]);
         close(pipe_fd[1]);
+
+        int max_fd = sysconf(_SC_OPEN_MAX);
+        if (max_fd < 0 || max_fd > 1024) max_fd = 1024;
+        for (int fd = 3; fd < max_fd; fd++) {
+            close(fd);
+        }
 
         if (cwd && strlen(cwd) > 0) {
             if (chdir(cwd) != 0) {

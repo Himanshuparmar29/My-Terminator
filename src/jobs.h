@@ -30,5 +30,6 @@ void jobs_update_status(void);
 void jobs_print(int out_fd);
 int jobs_bg(int id, int out_fd);
 int jobs_fg(int id, int in_fd, int out_fd);
+void jobs_cleanup(void);
 
 #endif

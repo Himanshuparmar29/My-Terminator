@@ -34,7 +34,7 @@ Tab *tab_create(int id, const char *initial_cwd, ExecutionMode mode) {
 
     int gui_to_shell[2];
     int shell_to_gui[2];
-    if (pipe(gui_to_shell) < 0 || pipe(shell_to_gui) < 0) {
+    if (pipe2(gui_to_shell, O_CLOEXEC) < 0 || pipe2(shell_to_gui, O_CLOEXEC) < 0) {
         free(tab->lines[0]);
         free(tab->lines);
         free(tab);
@@ -76,9 +76,16 @@ Tab *tab_create(int id, const char *initial_cwd, ExecutionMode mode) {
             return NULL;
         }
         if (pid == 0) {
-            close(gui_to_shell[1]);
-            close(shell_to_gui[0]);
-            shell_process_entry(gui_to_shell[0], shell_to_gui[1], tab->cwd);
+            int in_fd = gui_to_shell[0];
+            int out_fd = shell_to_gui[1];
+            int max_fd = sysconf(_SC_OPEN_MAX);
+            if (max_fd < 0 || max_fd > 1024) max_fd = 1024;
+            for (int fd = 3; fd < max_fd; fd++) {
+                if (fd != in_fd && fd != out_fd) {
+                    close(fd);
+                }
+            }
+            shell_process_entry(in_fd, out_fd, tab->cwd);
             _exit(0);
         }
         close(gui_to_shell[0]);
